@@ -4,14 +4,21 @@
 
 (setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono"
                            :size 13
-                           :weight 'normal)
-      doom-theme 'doom-gruvbox
-      display-line-numbers-type t)
+                           :weight 'normal))
 
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
+(setq doom-theme 'zenburn)
 
-(map! "C-." 'avy-goto-char-timer ; bind Avy command
-      "C-s" 'consult-line)       ; rebind Isearch to use Consult
+(setq display-line-numbers-type t)
+
+(map! "C-s" 'consult-line)       ; rebind Isearch to use Consult
+
+(setq avy-all-windows t)
+
+(define-advice pop-global-mark (:around (pgm) use-display-buffer)
+  "Make `pop-to-buffer' jump buffers via `display-buffer'."
+  (cl-letf (((symbol-function 'switch-to-buffer)
+                         #'pop-to-buffer))
+                (funcall pgm)))
 
 (use-package! cc-mode
   :bind
@@ -19,6 +26,11 @@
    ("C-x C-d" . c-hungry-delete-forward)))
 
 (setq global-hl-line-modes nil)
+
+(setq next-line-add-newlines t)
+
+(setq scroll-conservatively 10
+      scroll-margin 0)
 
 (defun my-set-whitespace-defaults ()
   ;; Only save the values the first time we get here
@@ -83,3 +95,11 @@
 
 (add-to-list '+format-on-save-disabled-modes 'c++-ts-mode)
 (add-to-list '+format-on-save-disabled-modes 'c-ts-mode)
+
+(add-hook! 'lisp-mode-hook (setq-local company-idle-delay nil))
+
+(map! :map smartparens-mode-map
+      "C-<right>" 'sp-forward-slurp-sexp
+      "M-<right>" 'sp-forward-barf-sexp
+      "C-<left>" 'sp-backward-slurp-sexp
+      "M-<left>" 'sp-backward-barf-sexp)

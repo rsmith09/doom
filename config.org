@@ -8,21 +8,20 @@
 
 ** User Interface
 
-Gruvbox is the best
+Easy on the eyes font and theme.
 
 #+begin_src emacs-lisp
 (setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono"
                            :size 13
-                           :weight 'normal)
-      doom-theme 'doom-gruvbox
-      display-line-numbers-type t)
+                           :weight 'normal))
+
+(setq doom-theme 'zenburn)
 #+end_src
 
-When using Emacs under WSL, the window never remembers its previous size, so
-maximize it by default.
+Enable lines numbers globaly.
 
 #+begin_src emacs-lisp
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
+(setq display-line-numbers-type t)
 #+end_src
 
 ** General Editing
@@ -30,8 +29,21 @@ maximize it by default.
 Bind some useful commands, I use everywhere.
 
 #+begin_src emacs-lisp
-(map! "C-." 'avy-goto-char-timer ; bind Avy command
-      "C-s" 'consult-line)       ; rebind Isearch to use Consult
+(map! "C-s" 'consult-line)       ; rebind Isearch to use Consult
+#+end_src
+
+Avy is the best way to jump around in Emacs. Enable all windows as potential
+targets. To make returning after jumping with Avy easier, also configure
+`pop-global-mark' to switch windows if possible.
+
+#+begin_src emacs-lisp
+(setq avy-all-windows t)
+
+(define-advice pop-global-mark (:around (pgm) use-display-buffer)
+  "Make `pop-to-buffer' jump buffers via `display-buffer'."
+  (cl-letf (((symbol-function 'switch-to-buffer)
+                         #'pop-to-buffer))
+                (funcall pgm)))
 #+end_src
 
 Emacs provides hungry deletion commands, but only under the cc-mode package.
@@ -48,6 +60,22 @@ default.
 
 #+begin_src emacs-lisp
 (setq global-hl-line-modes nil)
+#+end_src
+
+Automatically inserting newlines when moving to the next line is useful when
+auto-complete is active.
+
+#+begin_src emacs-lisp
+(setq next-line-add-newlines t)
+#+end_src
+
+By default Emacs scrolls when at the edges of the window. This requires moving my
+eyes around the window more than I would like if I just need to move the window
+slightly, so enable smooth scrolling.
+
+#+begin_src emacs-lisp
+(setq scroll-conservatively 10
+      scroll-margin 0)
 #+end_src
 
 ** Whitespace
@@ -160,4 +188,23 @@ that per project.
 #+begin_src emacs-lisp
 (add-to-list '+format-on-save-disabled-modes 'c++-ts-mode)
 (add-to-list '+format-on-save-disabled-modes 'c-ts-mode)
+#+end_src
+
+*** Common Lisp
+
+Sly can become slow for some reason during completion, so disable idle
+completion.
+
+#+begin_src emacs-lisp
+(add-hook! 'lisp-mode-hook (setq-local company-idle-delay nil))
+#+end_src
+
+Bind some useful smartparen commands not bound by default.
+
+#+begin_src emacs-lisp
+(map! :map smartparens-mode-map
+      "C-<right>" 'sp-forward-slurp-sexp
+      "M-<right>" 'sp-forward-barf-sexp
+      "C-<left>" 'sp-backward-slurp-sexp
+      "M-<left>" 'sp-backward-barf-sexp)
 #+end_src

@@ -54,3 +54,5 @@
 ;; (unpin! t)
 
 (package! rainbow-delimiters)
+(package! rainbow-mode)
+(package! zenburn-theme)
