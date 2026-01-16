@@ -29,7 +29,7 @@ Enable lines numbers globaly.
 Bind some useful commands, I use everywhere.
 
 #+begin_src emacs-lisp
-(map! "C-s" 'consult-line)       ; rebind Isearch to use Consult
+(map! "C-s" 'consult-line)
 #+end_src
 
 Avy is the best way to jump around in Emacs. Enable all windows as potential
