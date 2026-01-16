@@ -39,8 +39,7 @@ targets. To make returning after jumping with Avy easier, also configure
 #+begin_src emacs-lisp
 (setq avy-all-windows t)
 
-(map! :after avy
-      "C-." 'avy-goto-char-timer)
+(map! "C-." 'avy-goto-char-timer)
 
 (define-advice pop-global-mark (:around (pgm) use-display-buffer)
   "Make `pop-to-buffer' jump buffers via `display-buffer'."
