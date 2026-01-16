@@ -24,6 +24,13 @@ Enable lines numbers globaly.
 (setq display-line-numbers-type t)
 #+end_src
 
+hl-line-mode can make lines with lots of overlays hard to read, so disable it by
+default.
+
+#+begin_src emacs-lisp
+(setq global-hl-line-modes nil)
+#+end_src
+
 ** General Editing
 
 Bind some useful commands, I use everywhere.
@@ -55,13 +62,6 @@ Emacs provides hungry deletion commands, but only under the cc-mode package.
   :bind
   (("C-x DEL" . c-hungry-delete-backwards)
    ("C-x C-d" . c-hungry-delete-forward)))
-#+end_src
-
-hl-line-mode can make lines with lots of overlays hard to read, so disable it by
-default.
-
-#+begin_src emacs-lisp
-(setq global-hl-line-modes nil)
 #+end_src
 
 Automatically inserting newlines when moving to the next line is useful when
