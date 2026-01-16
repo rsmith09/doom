@@ -31,56 +31,7 @@ default.
 (setq global-hl-line-modes nil)
 #+end_src
 
-** General Editing
-
-Bind some useful commands, I use everywhere.
-
-#+begin_src emacs-lisp
-(map! "C-s" 'consult-line)
-#+end_src
-
-Avy is the best way to jump around in Emacs. Enable all windows as potential
-targets. To make returning after jumping with Avy easier, also configure
-`pop-global-mark' to switch windows if possible.
-
-#+begin_src emacs-lisp
-(setq avy-all-windows t)
-
-(map! "C-." 'avy-goto-char-timer)
-
-(define-advice pop-global-mark (:around (pgm) use-display-buffer)
-  "Make `pop-to-buffer' jump buffers via `display-buffer'."
-  (cl-letf (((symbol-function 'switch-to-buffer)
-                         #'pop-to-buffer))
-                (funcall pgm)))
-#+end_src
-
-Emacs provides hungry deletion commands, but only under the cc-mode package.
-
-#+begin_src emacs-lisp
-(use-package! cc-mode
-  :bind
-  (("C-x DEL" . c-hungry-delete-backwards)
-   ("C-x C-d" . c-hungry-delete-forward)))
-#+end_src
-
-Automatically inserting newlines when moving to the next line is useful when
-auto-complete is active.
-
-#+begin_src emacs-lisp
-(setq next-line-add-newlines t)
-#+end_src
-
-By default Emacs scrolls when at the edges of the window. This requires moving my
-eyes around the window more than I would like if I just need to move the window
-slightly, so enable smooth scrolling.
-
-#+begin_src emacs-lisp
-(setq scroll-conservatively 10
-      scroll-margin 0)
-#+end_src
-
-** Whitespace
+*** Whitespace
 
 Doom Emacs overrides the default whitespace-mode behavior to display errors,
 which is useful, but sometimes I want to use it to inspect the buffer's
@@ -128,6 +79,55 @@ https://www.reddit.com/r/DoomEmacs/comments/jl6p9x/whitespacemode/
          (whitespace-mode))))
 
 (global-set-key (kbd "C-<f4>") #'my-toggle-whitespace)
+#+end_src
+
+** General Editing
+
+Bind some useful commands, I use everywhere.
+
+#+begin_src emacs-lisp
+(map! "C-s" 'consult-line)
+#+end_src
+
+Avy is the best way to jump around in Emacs. Enable all windows as potential
+targets. To make returning after jumping with Avy easier, also configure
+`pop-global-mark' to switch windows if possible.
+
+#+begin_src emacs-lisp
+(setq avy-all-windows t)
+
+(map! "C-." 'avy-goto-char-timer)
+
+(define-advice pop-global-mark (:around (pgm) use-display-buffer)
+  "Make `pop-to-buffer' jump buffers via `display-buffer'."
+  (cl-letf (((symbol-function 'switch-to-buffer)
+                         #'pop-to-buffer))
+                (funcall pgm)))
+#+end_src
+
+Emacs provides hungry deletion commands, but only under the cc-mode package.
+
+#+begin_src emacs-lisp
+(use-package! cc-mode
+  :bind
+  (("C-x DEL" . c-hungry-delete-backwards)
+   ("C-x C-d" . c-hungry-delete-forward)))
+#+end_src
+
+Automatically inserting newlines when moving to the next line is useful when
+auto-complete is active.
+
+#+begin_src emacs-lisp
+(setq next-line-add-newlines t)
+#+end_src
+
+By default Emacs scrolls when at the edges of the window. This requires moving my
+eyes around the window more than I would like if I just need to move the window
+slightly, so enable smooth scrolling.
+
+#+begin_src emacs-lisp
+(setq scroll-conservatively 10
+      scroll-margin 0)
 #+end_src
 
 ** Completion
