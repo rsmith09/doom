@@ -91,7 +91,7 @@ Bind some useful commands, I use everywhere.
 
 Avy is the best way to jump around in Emacs. Enable all windows as potential
 targets. To make returning after jumping with Avy easier, also configure
-`pop-global-mark' to switch windows if possible.
+[[help:pop-global-mark][pop-global-mark]] to switch windows if possible.
 
 #+begin_src emacs-lisp
 (setq avy-all-windows t)
