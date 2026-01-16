@@ -14,6 +14,9 @@
 
 (setq avy-all-windows t)
 
+(map! :after avy
+      "C-." 'avy-goto-char-timer)
+
 (define-advice pop-global-mark (:around (pgm) use-display-buffer)
   "Make `pop-to-buffer' jump buffers via `display-buffer'."
   (cl-letf (((symbol-function 'switch-to-buffer)
