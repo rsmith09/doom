@@ -1,7 +1,17 @@
+:PROPERTIES:
+:header-args:emacs-lisp: :lexical t
+:END:
 * My Doom Emacs Configuration
 
+Enable lexical binding by default for tangle output.
+
 #+begin_src emacs-lisp
-;; -*- lexical-binding: t; -*-
+;;;; -*- lexical-binding: t; -*-
+#+end_src
+
+Set user information.
+
+#+begin_src emacs-lisp
 (setq user-full-name "Russell Smith"
       user-mail-address "russell.smith7502@gmail.com")
 #+end_src
