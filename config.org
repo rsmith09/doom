@@ -34,19 +34,20 @@ Enable lines numbers globaly.
 (setq display-line-numbers-type t)
 #+end_src
 
-hl-line-mode can make lines with lots of overlays hard to read, so disable it by
-default.
+ When wrapping is enabled, [[help:hl-line-mode][hl-line-mode]] highlights the logical line (the block of text) by default. That defeats the purpose of wrapping, so change it to only highlight visual lines.
 
 #+begin_src emacs-lisp
-(setq global-hl-line-modes nil)
+(defun visual-line-range ()
+  (save-excursion
+    (cons (progn (vertical-motion 0) (point))
+          (progn (vertical-motion 1) (+ (point) 0)))))
+
+(setq hl-line-range-function #'visual-line-range)
 #+end_src
 
 *** Whitespace
 
-Doom Emacs overrides the default whitespace-mode behavior to display errors,
-which is useful, but sometimes I want to use it to inspect the buffer's
-whitespace. This snippet allows me to toggle between three whitespace-mode
-behavior states: Doom's default, original behavior, and off.
+Doom Emacs overrides the default whitespace-mode behavior to display errors, which is useful, but sometimes I want to use it to inspect the buffer's whitespace. This snippet allows me to toggle between three whitespace-mode behavior states: Doom's default, original behavior, and off.
 
 This is adapted from this post:
 https://www.reddit.com/r/DoomEmacs/comments/jl6p9x/whitespacemode/
@@ -99,9 +100,7 @@ Bind some useful commands, I use everywhere.
 (map! "C-s" 'consult-line)
 #+end_src
 
-Avy is the best way to jump around in Emacs. Enable all windows as potential
-targets. To make returning after jumping with Avy easier, also configure
-[[help:pop-global-mark][pop-global-mark]] to switch windows if possible.
+Avy is the best way to jump around in Emacs. Enable all windows as potential targets. To make returning after jumping with Avy easier, also configure [[help:pop-global-mark][pop-global-mark]] to switch windows if possible.
 
 #+begin_src emacs-lisp
 (setq avy-all-windows t)
@@ -110,40 +109,58 @@ targets. To make returning after jumping with Avy easier, also configure
 
 (define-advice pop-global-mark (:around (pgm) use-display-buffer)
   "Make `pop-to-buffer' jump buffers via `display-buffer'."
-  (cl-letf (((symbol-function 'switch-to-buffer)
-                         #'pop-to-buffer))
-                (funcall pgm)))
+  (cl-letf (((symbol-function 'switch-to-buffer) #'pop-to-buffer))
+    (funcall pgm)))
 #+end_src
 
-Emacs provides hungry deletion commands, but only under the cc-mode package.
-
-#+begin_src emacs-lisp
-(use-package! cc-mode
-  :bind
-  (("C-x DEL" . c-hungry-delete-backwards)
-   ("C-x C-d" . c-hungry-delete-forward)))
-#+end_src
-
-Automatically inserting newlines when moving to the next line is useful when
-auto-complete is active.
+Automatically inserting newlines when moving to the next line is useful when auto-complete is active.
 
 #+begin_src emacs-lisp
 (setq next-line-add-newlines t)
 #+end_src
 
-By default Emacs scrolls when at the edges of the window. This requires moving my
-eyes around the window more than I would like if I just need to move the window
-slightly, so enable smooth scrolling.
+*** Word Wrapping
+
+Doom provides many enhancements for the vanilla [[help:visual-line-mode][visual-line-mode]] experience via [[help:+word-wrap-mode][+word-wrap-mode]]. However, it does not provide a nice way to toggle between word wrapping and truncating, so I implementated the feature myself. I disable it by default beacause I prefer truncating in programming modes, which is where I spend the majority of my time.
 
 #+begin_src emacs-lisp
-(setq scroll-conservatively 10
-      scroll-margin 0)
+(defvar my-word-wrap-enabled nil)
+#+end_src
+
+Wrap lines at the [[help:fill-column][fill-column]] and disable [[help:auto-fill-mode][auto-fill-mode]] when wrapping.
+
+#+begin_src emacs-lisp
+(setq +word-wrap-fill-style 'soft)
+#+end_src
+
+*** Paragraph Filling
+
+When I decided to switch to wrapping for Org mode, I tried to unfill all my paragraphs but realized this feature is not provided natively. Here is an implementation based on one from the [[https:www.emacswiki.org/emacs/UnfillParagraph][Emacs Wiki]]: mine includes a wrapper function which allows for deciding on filling or unfilling via the prefix argument.
+
+#+begin_src emacs-lisp
+(defun unfill-paragraph (&optional region)
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive (progn (barf-if-buffer-read-only) '(t)))
+  (let ((fill-column (point-max))
+        ;; This would override `fill-column' if it's an integer.
+        (emacs-lisp-docstring-fill-column t))
+    (fill-paragraph nil region)))
+
+(defun my-fill-paragraph (&optional region unfill)
+  (interactive (progn (barf-if-buffer-read-only)
+                      (list t current-prefix-arg)))
+  (let ((unfill (or unfill 1)))
+    (if (or (eq unfill '-)
+            (cl-minusp unfill))
+        (unfill-paragraph region)
+      (fill-paragraph t region))))
+
+(map! "M-q" 'my-fill-paragraph)
 #+end_src
 
 ** Completion
 
-I had trouble disabling certain Corfu bindings. Company works fine, so use it
-for now.
+I had trouble disabling certain Corfu bindings. Company works fine, so use it for now.
 
 #+begin_src emacs-lisp
 (after! company
