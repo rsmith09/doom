@@ -40,7 +40,7 @@ Enable lines numbers globaly.
 (defun visual-line-range ()
   (save-excursion
     (cons (progn (vertical-motion 0) (point))
-          (progn (vertical-motion 1) (+ (point) 0)))))
+          (progn (vertical-motion 1) (point)))))
 
 (setq hl-line-range-function #'visual-line-range)
 #+end_src
@@ -100,7 +100,7 @@ Bind some useful commands, I use everywhere.
 (map! "C-s" 'consult-line)
 #+end_src
 
-Avy is the best way to jump around in Emacs. Enable all windows as potential targets. To make returning after jumping with Avy easier, also configure [[help:pop-global-mark][pop-global-mark]] to switch windows if possible.
+Avy is the best way to jump around in Emacs. Enable all windows as potential targets. To make returning after jumping with Avy easier, also configure [[fn:pop-global-mark][pop-global-mark]] to switch windows if possible.
 
 #+begin_src emacs-lisp
 (setq avy-all-windows t)
@@ -121,11 +121,7 @@ Automatically inserting newlines when moving to the next line is useful when aut
 
 *** Word Wrapping
 
-Doom provides many enhancements for the vanilla [[help:visual-line-mode][visual-line-mode]] experience via [[help:+word-wrap-mode][+word-wrap-mode]]. However, it does not provide a nice way to toggle between word wrapping and truncating, so I implementated the feature myself. I disable it by default beacause I prefer truncating in programming modes, which is where I spend the majority of my time.
-
-#+begin_src emacs-lisp
-(defvar my-word-wrap-enabled nil)
-#+end_src
+Doom by default do not provide a way to toggle word wrapping, so I created a module, ++word-wrap, that provides a mode to implement it. ++word wrap also toggles the word-wrap module, which enhances the default behavior of visual lines, if it's enabled. I use [[fn:++word-wrap-mode][++word-wrap-mode]] in my config whenever I want to enable wrapping.
 
 Wrap lines at the [[help:fill-column][fill-column]] and disable [[help:auto-fill-mode][auto-fill-mode]] when wrapping.
 
@@ -191,7 +187,7 @@ Extend fill column.
 Enable word wrapping.
 
 #+begin_src emacs-lisp
-(add-hook! org-mode #'+word-wrap-mode)
+(add-hook! org-mode #'++word-wrap-mode)
 #+end_src
 
 ** Programming
