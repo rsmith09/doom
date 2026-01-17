@@ -158,14 +158,23 @@ for now.
 
 ** Org Mode
 
+Set org mode directory.
+
 #+begin_src emacs-lisp
 (setq org-directory "~/org/")
 #+end_src
 
-Auto-Fill makes it easier to format
+Extend fill column.
 
 #+begin_src emacs-lisp
-(add-hook! 'org-mode-hook (auto-fill-mode +1))
+(setq-hook! org-mode
+  fill-column 120)
+#+end_src
+
+Enable word wrapping.
+
+#+begin_src emacs-lisp
+(add-hook! org-mode #'+word-wrap-mode)
 #+end_src
 
 ** Programming
@@ -173,15 +182,14 @@ Auto-Fill makes it easier to format
 I use these modes in every programming language.
 
 #+begin_src emacs-lisp
-(add-hook! 'prog-mode-hook
-  (rainbow-delimiters-mode-enable)
-  (display-fill-column-indicator-mode))
+(add-hook! prog-mode '(rainbow-delimiters-mode-enable display-fill-column-indicator-mode))
 #+end_src
 
 Configure the tab key to always indent line to the correct indention.
 
 #+begin_src emacs-lisp
-(add-hook! 'prog-mode-hook (setq-local tab-always-indent t))
+(setq-hook! prog-mode
+  tab-always-indent t)
 #+end_src
 
 *** C/C++
@@ -194,27 +202,35 @@ Set the default style to the Linux kernel's style, but use a 4 space indent.
   c-ts-mode-indent-offset 4)
 #+end_src
 
-Disable auto-formating by default. If I want to use clang-format, I configure
-that per project.
+Disable auto-formating by default. If I want to use clang-format, I configure that per project.
 
 #+begin_src emacs-lisp
 (add-to-list '+format-on-save-disabled-modes 'c++-ts-mode)
 (add-to-list '+format-on-save-disabled-modes 'c-ts-mode)
 #+end_src
 
-*** Common Lisp
-
-Sly can become slow for some reason during completion, so disable idle
-completion.
+I prefer the new treesitter based mode, but the old cc-mode has some useful commands. I use the hungry deletion commands globally.
 
 #+begin_src emacs-lisp
-(add-hook! 'lisp-mode-hook (setq-local company-idle-delay nil))
+(use-package! cc-mode
+  :bind (("C-x DEL" . c-hungry-delete-backwards)
+         ("C-x C-d" . c-hungry-delete-forward)))
+#+end_src
+
+*** Common Lisp
+
+Sly can become slow for some reason during completion, so disable idle completion.
+
+#+begin_src emacs-lisp
+(setq-hook! lisp-mode
+  company-idle-delay nil)
 #+end_src
 
 Bind some useful smartparen commands not bound by default.
 
 #+begin_src emacs-lisp
-(map! :map smartparens-mode-map
+(map! :after smartparens
+      :map smartparens-mode-map
       "C-<right>" 'sp-forward-slurp-sexp
       "M-<right>" 'sp-forward-barf-sexp
       "C-<left>" 'sp-backward-slurp-sexp
