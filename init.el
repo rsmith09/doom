@@ -65,7 +65,7 @@
        parinfer          ; turn lisp into python, sort of
        ;;rotate-text       ; cycle region at point between text candidates
        snippets          ; my elves. They type so I don't have to
-       (whitespace +guess +trim)  ; a butler for your whitespace
+       ;;(whitespace +guess +trim)  ; a butler for your whitespace
        word-wrap         ; soft wrapping with language-aware indent
 
        :emacs
@@ -198,4 +198,5 @@
        (default +bindings +smartparens)
 
        :personal
-       ++word-wrap)
+       ++word-wrap
+       (whitespace +guess +trim))

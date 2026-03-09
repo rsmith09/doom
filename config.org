@@ -45,53 +45,6 @@ Enable lines numbers globaly.
 (setq hl-line-range-function #'visual-line-range)
 #+end_src
 
-*** Whitespace
-
-Doom Emacs overrides the default whitespace-mode behavior to display errors, which is useful, but sometimes I want to use it to inspect the buffer's whitespace. This snippet allows me to toggle between three whitespace-mode behavior states: Doom's default, original behavior, and off.
-
-This is adapted from this post:
-https://www.reddit.com/r/DoomEmacs/comments/jl6p9x/whitespacemode/
-
-#+begin_src emacs-lisp
-(defun my-set-whitespace-defaults ()
-  ;; Only save the values the first time we get here
-  (unless (boundp 'my-default-whitespace-style)
-    (setq my-default-whitespace-style                (default-value 'whitespace-style)
-          my-default-whitespace-display-mappings     (default-value 'whitespace-display-mappings)
-          my-doom-whitespace-style                   whitespace-style
-          my-doom-whitespace-display-mappings        whitespace-display-mappings
-          my-whitespace-mode                         "doom")))
-
-;; whitespace-style etc is set up with default-values in whitespace.el and then
-;; modified in doom-highlight-non-default-indentation-h (in core/core-ui.el).
-;; This is added to after-change-major-mode-hook in doom-init-ui-h (in
-;; core/core-ui.el) and called a LOT: so I need to capture doom's modified
-;; settings after that. The trouble is, this file (config.el) is called before
-;; doom-init-ui-h which is called in window-setup-hook.
-(add-hook 'find-file-hook #'my-set-whitespace-defaults 'append)
-
-(defun my-toggle-whitespace ()
-  (interactive)
-  (cond ((equal my-whitespace-mode "doom")
-         (setq whitespace-style my-default-whitespace-style
-               whitespace-display-mappings my-default-whitespace-display-mappings
-               my-whitespace-mode "default")
-         (prin1 (concat "whitespace-mode is whitespace default"))
-         (whitespace-mode))
-        ((equal my-whitespace-mode "default")
-         (setq my-whitespace-mode "off")
-         (prin1 (concat "whitespace-mode is off"))
-         (whitespace-mode -1))
-        (t ; (equal bh:whitespace-mode "off")
-         (setq whitespace-style my-doom-whitespace-style
-               whitespace-display-mappings my-doom-whitespace-display-mappings
-               my-whitespace-mode "doom")
-         (prin1 (concat "whitespace-mode is doom default"))
-         (whitespace-mode))))
-
-(global-set-key (kbd "C-<f4>") #'my-toggle-whitespace)
-#+end_src
-
 ** General Editing
 
 Bind some useful commands, I use everywhere.
@@ -187,7 +140,7 @@ Extend fill column.
 Enable word wrapping.
 
 #+begin_src emacs-lisp
-(add-hook! org-mode #'++word-wrap-mode)
+;;(add-hook! org-mode #'++word-wrap-mode)
 #+end_src
 
 ** Programming
