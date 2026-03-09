@@ -158,6 +158,14 @@ Configure the tab key to always indent line to the correct indention.
   tab-always-indent t)
 #+end_src
 
+*** LSP
+
+Enables some useful UI features that are Doom disables by default.
+
+#+begin_src emacs-lisp
+(setq lsp-headerline-breadcrumb-enable t)
+#+end_src
+
 *** C/C++
 
 Set the default style to the Linux kernel's style, but use a 4 space indent.
