@@ -1,15 +1,15 @@
+#+STARTUP: content
 :PROPERTIES:
 :header-args:emacs-lisp: :lexical t
 :END:
 * My Doom Emacs Configuration
-
 Enable lexical binding by default for tangle output.
 
 #+begin_src emacs-lisp
 ;;;; -*- lexical-binding: t; -*-
 #+end_src
 
-Set user information.
+Set my personal information.
 
 #+begin_src emacs-lisp
 (setq user-full-name "Russell Smith"
@@ -17,24 +17,36 @@ Set user information.
 #+end_src
 
 ** User Interface
+*** Theme and Fonts
+Zenburn in comparison to modern high contrast themes might appear ugly but is much easier on the eyes late at night. The doom-themes version is configured to look great with Doom's extensions.
 
-Easy on the eyes font and theme.
+#+begin_src emacs-lisp
+(setq doom-theme 'doom-zenburn)
+#+end_src
+
+JetBrainsMono is also great for preventing eye strain. The Nerd Font version supports icons, which are used extensively by Doom.
 
 #+begin_src emacs-lisp
 (setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono"
                            :size 13
                            :weight 'normal))
-
-(setq doom-theme 'zenburn)
 #+end_src
 
-Enable lines numbers globaly.
+*** Line Numbers
+Enable lines numbers globally.
 
 #+begin_src emacs-lisp
 (setq display-line-numbers-type t)
 #+end_src
 
- When wrapping is enabled, [[help:hl-line-mode][hl-line-mode]] highlights the logical line (the block of text) by default. That defeats the purpose of wrapping, so change it to only highlight visual lines.
+*** Line Wrapping
+Wrap lines at the [[help:fill-column][fill-column]] and disable [[help:auto-fill-mode][auto-fill-mode]] when wrapping.
+
+#+begin_src emacs-lisp
+(setq +word-wrap-fill-style 'soft)
+#+end_src
+
+When wrapping is enabled, [[help:hl-line-mode][hl-line-mode]] highlights the logical line by default. This defeats the purpose of wrapping, so change it to only highlight visual lines. This is not perfect because the end of the previous line is highlighted if it contains whitespace. Hopefully, I'll find a fix for this one day.
 
 #+begin_src emacs-lisp
 (defun visual-line-range ()
@@ -45,25 +57,21 @@ Enable lines numbers globaly.
 (setq hl-line-range-function #'visual-line-range)
 #+end_src
 
-** General Editing
+*** Whitespace
 
-Bind some useful commands, I use everywhere.
+Doom hijacks [[fn:whitespace-mode][whitespace-mode]] by default to highlight possible incorrect indentation. I like this behavior, but it is not configurable by default. I forked the whitespace module and refactored it to allow for toggling the behavior.
+
+#+begin_src emacs-lisp
+(when (modulep! :personal whitespace)
+  (map! :map doom-leader-toggle-map
+        :desc "Whitespace Style" "W" #'+whitespace/toggle-style))
+#+end_src
+
+** Editing
+Rebind the default isearch keybinding to consult.
 
 #+begin_src emacs-lisp
 (map! "C-s" 'consult-line)
-#+end_src
-
-Avy is the best way to jump around in Emacs. Enable all windows as potential targets. To make returning after jumping with Avy easier, also configure [[fn:pop-global-mark][pop-global-mark]] to switch windows if possible.
-
-#+begin_src emacs-lisp
-(setq avy-all-windows t)
-
-(map! "C-." 'avy-goto-char-timer)
-
-(define-advice pop-global-mark (:around (pgm) use-display-buffer)
-  "Make `pop-to-buffer' jump buffers via `display-buffer'."
-  (cl-letf (((symbol-function 'switch-to-buffer) #'pop-to-buffer))
-    (funcall pgm)))
 #+end_src
 
 Automatically inserting newlines when moving to the next line is useful when auto-complete is active.
@@ -72,14 +80,52 @@ Automatically inserting newlines when moving to the next line is useful when aut
 (setq next-line-add-newlines t)
 #+end_src
 
-*** Word Wrapping
+*** Avy
 
-Doom by default do not provide a way to toggle word wrapping, so I created a module, ++word-wrap, that provides a mode to implement it. ++word wrap also toggles the word-wrap module, which enhances the default behavior of visual lines, if it's enabled. I use [[fn:++word-wrap-mode][++word-wrap-mode]] in my config whenever I want to enable wrapping.
-
-Wrap lines at the [[help:fill-column][fill-column]] and disable [[help:auto-fill-mode][auto-fill-mode]] when wrapping.
+Avy is the best way to jump to any text on screen.
 
 #+begin_src emacs-lisp
-(setq +word-wrap-fill-style 'soft)
+(map! "C-." 'avy-goto-char-timer)
+
+(setq avy-all-windows t)
+#+end_src
+
+To make returning after jumping with Avy easier, configure [[fn:pop-global-mark][pop-global-mark]] to switch windows if possible.
+
+#+begin_src emacs-lisp
+(define-advice pop-global-mark (:around (pgm) use-display-buffer)
+  "Make `pop-to-buffer' jump buffers via `display-buffer'."
+  (cl-letf (((symbol-function 'switch-to-buffer) #'pop-to-buffer))
+    (funcall pgm)))
+#+end_src
+
+Avy can also be combined with Embark. This allows for selecting and acting on any text on screen without ever moving the cursor.
+
+#+begin_src emacs-lisp
+(defun avy-action-embark (pt)
+  (unwind-protect
+      (save-excursion
+        (goto-char pt)
+        (embark-act))
+    (select-window
+     (cdr (ring-ref avy-ring 0))))
+  t)
+
+(after! avy
+ (setf (alist-get ?o avy-dispatch-alist) 'avy-action-embark))
+#+end_src
+
+*** S-Expressions
+
+Bind some useful smartparens commands not bound by default.
+
+#+begin_src emacs-lisp
+(map! :after smartparens
+      :map smartparens-mode-map
+      "C-<right>" 'sp-forward-slurp-sexp
+      "M-<right>" 'sp-forward-barf-sexp
+      "C-<left>" 'sp-backward-slurp-sexp
+      "M-<left>" 'sp-backward-barf-sexp)
 #+end_src
 
 *** Paragraph Filling
@@ -107,9 +153,32 @@ When I decided to switch to wrapping for Org mode, I tried to unfill all my para
 (map! "M-q" 'my-fill-paragraph)
 #+end_src
 
-** Completion
+** Workspaces
+By default doom loads a project into the main workspace if it’s empty. I prefer to reserve the main workspace for ad hoc editing of files. So always open up a new workspace when opening up a project.
 
-I had trouble disabling certain Corfu bindings. Company works fine, so use it for now.
+#+begin_src emacs-lisp
+(setq +workspaces-on-switch-project-behavior t)
+#+end_src
+
+** Completion
+*** Corfu
+Company mode used to be the hip auto-complete framework. However, Corfu provides the same features while also integrating better with the native Emacs completion ecosystem.
+
+#+begin_src emacs-lisp
+(after! corfu
+  (setq corfu-auto t
+        corfu-cycle t
+        corfu-on-exact-match 'insert))
+#+end_src
+
+I used to really like constantly having completion options available, but completion backend speeds and results are not always reliable enough to enable this by default. Now, I use tab completion by default, which stays out of my way unless I need it.
+
+#+begin_src emacs-lisp
+(setq tab-always-indent 'complete) ; indent or complete line
+#+end_src
+
+*** Company
+At the moment, I am testing out Corfu. These are my old Company settings.
 
 #+begin_src emacs-lisp
 (after! company
@@ -122,43 +191,81 @@ I had trouble disabling certain Corfu bindings. Company works fine, so use it fo
         "C-p" nil))
 #+end_src
 
+** Spell Checking
+This is a temporary fix for the way the spell module handles the personal dictionary. See [[https:github.com/doomemacs/doomemacs/issues/6246][this issue]] for details.
+
+#+begin_src emacs-lisp
+(after! spell-fu
+  (unless (file-exists-p ispell-personal-dictionary)
+    (make-directory (file-name-directory ispell-personal-dictionary) t)
+    (with-temp-file ispell-personal-dictionary
+      (insert (format "personal_ws-1.1 %s 0\n" ispell-dictionary)))))
+#+end_src
+
 ** Org Mode
-
-Set org mode directory.
-
 #+begin_src emacs-lisp
-(setq org-directory "~/org/")
+(setq org-directory "~/Documents/Org/"
+      org-startup-indented t
+      org-auto-align-tags nil
+      org-tags-column 0
+      org-catch-invisible-edits 'show-and-error
+      org-special-ctrl-a/e t
+      org-insert-heading-respect-content t
+      org-hide-emphasis-markers t
+      org-pretty-entities t
+      org-agenda-tags-column 0
+      org-ellipsis "…")
 #+end_src
 
-Extend fill column.
+Modern monitors are wide enough that longer lines are acceptable. I also rarely have more than two horizontal windows open at a time.
 
 #+begin_src emacs-lisp
-(setq-hook! org-mode
-  fill-column 120)
+(setq-hook! org-mode fill-column 120)
 #+end_src
 
-Enable word wrapping.
+I prefer the headings to appear larger than the rest of the text on screen to make them more readable. I wrote [[fn:my-set-org-header-style][my-set-org-header-style]] to make changing the styles of all the header faces quicker and less error prone. Currently, this source block is disabled since I'm using Org Modern.
+
+#+begin_src emacs-lisp :tangle no
+(cl-defmacro my-set-org-header-style ((top-level-height height-diff) &rest args)
+  "Set the height of Org head lines with evenly spaced height differences."
+  (declare (indent defun))
+  `(progn
+     ,@(cl-loop for height = top-level-height then (- height height-diff)
+                for level from 1
+                while (>= height 1)
+                collect (let ((level-name (intern (format "org-level-%d" level))))
+                          `(set-face-attribute ',level-name nil
+                            ,@args)))))
+
+(after! org
+  (my-set-org-header-style (1.6 0.2)
+    :weight 'bold))
+#+end_src
+
+I use the Org Modern package to beautify the Org syntax.
 
 #+begin_src emacs-lisp
-;;(add-hook! org-mode #'++word-wrap-mode)
+(use-package! org-modern
+  :hook ((org-mode . org-modern-mode)))
+
+(use-package! org-modern-indent
+  :hook ((org-mode . org-modern-indent-mode)))
 #+end_src
 
 ** Programming
-
 I use these modes in every programming language.
 
 #+begin_src emacs-lisp
-(add-hook! prog-mode '(rainbow-delimiters-mode-enable display-fill-column-indicator-mode))
+(add-hook! prog-mode '(rainbow-delimiters-mode display-fill-column-indicator-mode))
 #+end_src
 
 Configure the tab key to always indent line to the correct indention.
 
 #+begin_src emacs-lisp
-(setq-hook! prog-mode
-  tab-always-indent t)
+(setq-hook! prog-mode tab-always-indent t)
 #+end_src
 
-*** LSP
+*** Language Servers
 
 Enables some useful UI features that are Doom disables by default.
 
@@ -200,13 +307,9 @@ Sly can become slow for some reason during completion, so disable idle completio
   company-idle-delay nil)
 #+end_src
 
-Bind some useful smartparen commands not bound by default.
+Often in projects using the iter macro from the Iterate package, Sly runs into indention collisions, so override it here.
 
 #+begin_src emacs-lisp
-(map! :after smartparens
-      :map smartparens-mode-map
-      "C-<right>" 'sp-forward-slurp-sexp
-      "M-<right>" 'sp-forward-barf-sexp
-      "C-<left>" 'sp-backward-slurp-sexp
-      "M-<left>" 'sp-backward-barf-sexp)
+(after! sly
+  (put 'iter 'common-lisp-indent-function 0))
 #+end_src
