@@ -214,6 +214,7 @@ This is a temporary fix for the way the spell module handles the personal dictio
       org-startup-indented t)
 #+end_src
 
+*** User Interface
 Modern monitors are wide enough that longer lines are acceptable. I also rarely have more than two horizontal windows open at a time.
 
 #+begin_src emacs-lisp
@@ -240,6 +241,7 @@ I prefer the headings to appear larger than the rest of the text on screen to ma
     :weight 'bold))
 #+end_src
 
+*** Completion
 The default Org capf list could use some work. I prefer snippets, dabbrevs, and dictionary results to be shown together during a completion prompt.
 
 #+begin_src emacs-lisp
@@ -249,6 +251,14 @@ The default Org capf list could use some work. I prefer snippets, dabbrevs, and 
     (list #'cape-elisp-block
           (cape-capf-super #'cape-dabbrev
                            #'cape-dict))))
+#+end_src
+
+Emphasis in Org mode is marked by pair syntax (e.g. surrounding a word a / character italicizes it). Register these characters with /smartparens/ so they can be handled automatically.
+
+#+begin_src emacs-lisp
+(sp-local-pair 'org-mode "*" "*" :actions '(wrap)) ; bold
+(sp-local-pair 'org-mode "/" "/" :actions '(wrap)) ; italicize
+(sp-local-pair 'org-mode "_" "_" :actions '(wrap)) ; underline
 #+end_src
 
 ** Programming
