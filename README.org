@@ -1,1 +1,307 @@
-/home/russell/.config/doom/config.org
+#+STARTUP: content
+:PROPERTIES:
+:header-args:emacs-lisp: :lexical t
+:END:
+* My Doom Emacs Configuration
+Enable lexical binding by default for tangle output.
+
+#+begin_src emacs-lisp
+;;;; -*- lexical-binding: t; -*-
+#+end_src
+
+Set my personal information.
+
+#+begin_src emacs-lisp
+(setq user-full-name "Russell Smith"
+      user-mail-address "russell.smith7502@gmail.com")
+#+end_src
+
+** User Interface
+*** Theme and Fonts
+Zenburn in comparison to modern high contrast themes might appear ugly but is much easier on the eyes late at night. The doom-themes version is configured to look great with Doom's extensions.
+
+#+begin_src emacs-lisp
+(setq doom-theme 'doom-zenburn)
+#+end_src
+
+JetBrainsMono is also great for preventing eye strain. The Nerd Font version supports icons, which are used extensively by Doom.
+
+#+begin_src emacs-lisp
+(setq doom-font (font-spec :family "JetBrainsMono Nerd Font Mono"
+                           :size 13
+                           :weight 'normal))
+#+end_src
+
+*** Line Numbers
+Enable lines numbers globally.
+
+#+begin_src emacs-lisp
+(setq display-line-numbers-type t)
+#+end_src
+
+*** Line Wrapping
+Wrap lines at the [[help:fill-column][fill-column]] and disable [[help:auto-fill-mode][auto-fill-mode]] when wrapping.
+
+#+begin_src emacs-lisp
+(setq +word-wrap-fill-style 'soft)
+#+end_src
+
+When wrapping is enabled, [[help:hl-line-mode][hl-line-mode]] highlights the logical line by default. This defeats the purpose of wrapping, so change it to only highlight visual lines. This is not perfect because the end of the previous line is highlighted if it contains whitespace. Hopefully, I'll find a fix for this one day.
+
+#+begin_src emacs-lisp
+(defun visual-line-range ()
+  (save-excursion
+    (cons (progn (vertical-motion 0) (point))
+          (progn (vertical-motion 1) (point)))))
+
+(setq hl-line-range-function #'visual-line-range)
+#+end_src
+
+*** Whitespace
+
+Doom hijacks [[fn:whitespace-mode][whitespace-mode]] by default to highlight possible incorrect indentation. I like this behavior, but it is not configurable by default. I forked the whitespace module and refactored it to allow for toggling the behavior.
+
+#+begin_src emacs-lisp
+(when (modulep! :personal whitespace)
+  (map! :map doom-leader-toggle-map
+        :desc "Whitespace Style" "W" #'+whitespace/toggle-style))
+#+end_src
+
+** Editing
+Automatically inserting newlines when moving to the next line is useful when auto-complete is active.
+
+#+begin_src emacs-lisp
+(setq next-line-add-newlines t)
+#+end_src
+
+*** Avy
+Avy is a useful tool for jumping and acting on arbitrary text on screen.
+
+#+begin_src emacs-lisp
+(map! "C-." 'avy-goto-char-timer)
+
+(setq avy-all-windows t)
+#+end_src
+
+To make returning after jumping with Avy easier, configure [[fn:pop-global-mark][pop-global-mark]] to switch windows if possible.
+
+#+begin_src emacs-lisp
+(define-advice pop-global-mark (:around (pgm) use-display-buffer)
+  "Make `pop-to-buffer' jump buffers via `display-buffer'."
+  (cl-letf (((symbol-function 'switch-to-buffer) #'pop-to-buffer))
+    (funcall pgm)))
+#+end_src
+
+Avy can also be combined with Embark. This allows for selecting and acting on any text on screen without ever moving the cursor.
+
+#+begin_src emacs-lisp
+(defun avy-action-embark (pt)
+  (unwind-protect
+      (save-excursion
+        (goto-char pt)
+        (embark-act))
+    (select-window
+     (cdr (ring-ref avy-ring 0))))
+  t)
+
+(after! avy
+  (setf (alist-get ?o avy-dispatch-alist) 'avy-action-embark))
+#+end_src
+
+*** ISearch
+ISearch is one of Emacs's most powerful features. When I first started using Emacs, I foolishly dismissed it. I didn't realize for years that many of my text movements can be replaced by incremental searching.
+
+#+begin_src emacs-lisp
+(defun my-isearch-consult-line ()
+  "Invoke `consult-line' from isearch."
+  (interactive)
+  (let ((query (if isearch-regexp
+                   isearch-string
+                 (regexp-quote isearch-string))))
+    (isearch-update-ring isearch-string isearch-regexp)
+    (let (search-nonincremental-instead)
+      (ignore-errors (isearch-done t t)))
+    (consult-line query)))
+
+(after! isearch
+  (setq search-nonincremental-instead nil) ; disable nonincremental search when input is empty on RET
+  (map! :map isearch-mode-map
+        "C-h" #'isearch-describe-bindings
+        "C-d" #'isearch-forward-symbol-at-point ; often quicker than M-s .
+        "C-l" #'my-isearch-consult-line
+        "C-." #'avy-isearch
+        "M-@" #'anzu-isearch-query-replace ; M-% is too much of a stretch
+        [remap isearch-query-replace]         #'anzu-isearch-query-replace
+        [remap isearch-query-replace-regexp]  #'anzu-isearch-query-replace-regexp))
+#+end_src
+*** S-Expressions
+
+Bind some useful smartparens commands not bound by default.
+
+#+begin_src emacs-lisp
+(map! :after smartparens
+      :map smartparens-mode-map
+      "C-<right>" 'sp-forward-slurp-sexp
+      "M-<right>" 'sp-forward-barf-sexp
+      "C-<left>" 'sp-backward-slurp-sexp
+      "M-<left>" 'sp-backward-barf-sexp)
+#+end_src
+
+*** Paragraph Filling
+
+When I decided to switch to wrapping for Org mode, I tried to empty all my paragraphs but realized this feature is not provided by default. Here is an implementation based on one from the [[https:www.emacswiki.org/emacs/UnfillParagraph][Emacs Wiki]]. Mine includes a wrapper function which allows deciding on filling or emptying via the prefix argument.
+
+#+begin_src emacs-lisp
+(defun empty-paragraph (&optional region)
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive (progn (barf-if-buffer-read-only) '(t)))
+  (let ((fill-column (point-max))
+        ;; This would override `fill-column' if it's an integer.
+        (emacs-lisp-docstring-fill-column t))
+    (fill-paragraph nil region)))
+
+(defun my-fill-paragraph (&optional region empty)
+  (interactive (progn (barf-if-buffer-read-only)
+                      (list t current-prefix-arg)))
+  (let ((empty (or empty 1)))
+    (if (or (eq empty '-)
+            (cl-minusp empty))
+        (empty-paragraph region)
+      (fill-paragraph t region))))
+
+(map! "M-q" 'my-fill-paragraph)
+#+end_src
+
+** Workspaces
+By default doom loads a project into the main workspace if it’s empty. I prefer to reserve the main workspace for ad hoc editing of files. So always open up a new workspace when opening up a project.
+
+#+begin_src emacs-lisp
+(setq +workspaces-on-switch-project-behavior t)
+#+end_src
+
+** Completion
+*** Orderless
+
+*** Completion at Point
+Emacs completion is designed around the minibuffer, which makes sense since most commands that require completion use the minibuffer for input. However, modern users are used to seeing candidates at the current point when completing text within a normal buffer. /Corfu/ provides this interface and more, while still adhering to the existing Emacs completion framework.
+
+#+begin_src emacs-lisp
+(after! corfu
+  (setq corfu-auto nil
+        corfu-cycle t
+        corfu-on-exact-match 'insert))
+#+end_src
+
+I used to really like constantly having completion options available, but completion backend speeds and results are not always reliable enough to enable this by default. Now, I use tab completion by default, which stays out of my way unless I need it.
+
+#+begin_src emacs-lisp
+(setq-default tab-always-indent 'complete) ; indent line or complete
+#+end_src
+** Spell Checking
+This is a temporary fix for the way the spell module handles the personal dictionary. See [[https:github.com/doomemacs/doomemacs/issues/6246][this issue]] for details.
+
+#+begin_src emacs-lisp
+(after! spell-fu
+  (unless (file-exists-p ispell-personal-dictionary)
+    (make-directory (file-name-directory ispell-personal-dictionary) t)
+    (with-temp-file ispell-personal-dictionary
+      (insert (format "personal_ws-1.1 %s 0\n" ispell-dictionary)))))
+#+end_src
+
+** Org Mode
+#+begin_src emacs-lisp
+(setq org-directory "~/Documents/Org/"
+      org-startup-indented t)
+#+end_src
+
+Modern monitors are wide enough that longer lines are acceptable. I also rarely have more than two horizontal windows open at a time.
+
+#+begin_src emacs-lisp
+(setq-hook! org-mode fill-column 120)
+#+end_src
+
+I prefer the headings to appear larger than the rest of the text on screen to make them more readable. I wrote [[fn:my-set-org-header-style][my-set-org-header-style]] to make changing the styles of all the header faces quicker and less error prone.
+
+#+begin_src emacs-lisp
+(cl-defmacro my-set-org-header-style ((top-level-height height-diff) &rest args)
+  "Set the height of Org head lines with evenly spaced height differences."
+  (declare (indent defun))
+  `(progn
+     ,@(cl-loop for height = top-level-height then (- height height-diff)
+                for level from 1
+                while (>= height 1)
+                collect (let ((level-name (intern (format "org-level-%d" level))))
+                          `(set-face-attribute ',level-name nil
+                            :height ,height
+                            ,@args)))))
+
+(after! org
+  (my-set-org-header-style (1.6 0.2)
+    :weight 'bold))
+#+end_src
+
+I use the Org Modern package to beautify the Org syntax.
+
+#+begin_src emacs-lisp :tangle no
+(use-package! org-modern
+  :hook ((org-mode . org-modern-mode)))
+
+(use-package! org-modern-indent
+  :hook ((org-mode . org-modern-indent-mode)))
+#+end_src
+
+The default Org capf list could use some work. I prefer snippets, dabbrevs, and dictionary results to be shown together during a completion prompt.
+
+#+begin_src emacs-lisp
+(when (modulep! :personal auto-complete)
+  (setq-hook! org-mode
+    completion-at-point-functions
+    (list #'cape-elisp-block
+          (cape-capf-super #'cape-dabbrev
+                           #'cape-dict))))
+#+end_src
+
+** Programming
+I use these modes in every programming language.
+
+#+begin_src emacs-lisp
+(add-hook! prog-mode '(rainbow-delimiters-mode display-fill-column-indicator-mode))
+#+end_src
+
+*** Language Servers
+Enables some useful UI features that are Doom disables by default.
+
+#+begin_src emacs-lisp
+(setq lsp-headerline-breadcrumb-enable t)
+#+end_src
+*** Common Lisp
+Often in projects using the iter macro from the Iterate package, Sly runs into indention collisions, so override it here.
+
+#+begin_src emacs-lisp
+(after! sly
+  (put 'iter 'common-lisp-indent-function 0))
+#+end_src
+
+*** C/C++
+Set the default style to the Linux kernel's style, but use a 4 space indent.
+
+#+begin_src emacs-lisp
+(setq-hook! '(c-ts-mode-hook c++-ts-mode-hook)
+  c-ts-mode-indent-style 'linux
+  c-ts-mode-indent-offset 4)
+#+end_src
+
+Disable auto-formating by default. If I want to use clang-format, I configure that per project.
+
+#+begin_src emacs-lisp
+(add-to-list '+format-on-save-disabled-modes 'c++-ts-mode)
+(add-to-list '+format-on-save-disabled-modes 'c-ts-mode)
+#+end_src
+
+I prefer the new treesitter based mode, but the old cc-mode has some useful commands. I use the hungry deletion commands globally.
+
+#+begin_src emacs-lisp
+(use-package! cc-mode
+  :bind (("C-x DEL" . c-hungry-delete-backwards)
+         ("C-x C-d" . c-hungry-delete-forward)))
+#+end_src
