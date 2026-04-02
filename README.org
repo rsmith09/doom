@@ -127,7 +127,7 @@ ISearch is one of Emacs's most powerful features. When I first started using Ema
   (setq search-nonincremental-instead nil) ; disable nonincremental search when input is empty on RET
   (map! :map isearch-mode-map
         "C-h" #'isearch-describe-bindings
-        "C-d" #'isearch-forward-symbol-at-point ; often quicker than M-s .
+        "C-d" #'isearch-forward-thing-at-point ; often quicker than M-s .
         "C-l" #'my-isearch-consult-line
         "C-." #'avy-isearch
         "M-@" #'anzu-isearch-query-replace ; M-% is too much of a stretch
