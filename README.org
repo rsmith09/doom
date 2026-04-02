@@ -256,9 +256,10 @@ The default Org capf list could use some work. I prefer snippets, dabbrevs, and 
 Emphasis in Org mode is marked by pair syntax (e.g. surrounding a word a / character italicizes it). Register these characters with /smartparens/ so they can be handled automatically.
 
 #+begin_src emacs-lisp
-(sp-local-pair 'org-mode "*" "*" :actions '(wrap)) ; bold
-(sp-local-pair 'org-mode "/" "/" :actions '(wrap)) ; italicize
-(sp-local-pair 'org-mode "_" "_" :actions '(wrap)) ; underline
+(after! smartparens
+  (sp-local-pair 'org-mode "*" "*" :actions '(wrap)) ; bold
+  (sp-local-pair 'org-mode "/" "/" :actions '(wrap)) ; italicize
+  (sp-local-pair 'org-mode "_" "_" :actions '(wrap))) ; underline
 #+end_src
 
 ** Programming
