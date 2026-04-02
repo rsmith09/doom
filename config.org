@@ -68,12 +68,6 @@ Doom hijacks [[fn:whitespace-mode][whitespace-mode]] by default to highlight pos
 #+end_src
 
 ** Editing
-Rebind the default isearch keybinding to consult.
-
-#+begin_src emacs-lisp
-(map! "C-s" 'consult-line)
-#+end_src
-
 Automatically inserting newlines when moving to the next line is useful when auto-complete is active.
 
 #+begin_src emacs-lisp
@@ -81,8 +75,7 @@ Automatically inserting newlines when moving to the next line is useful when aut
 #+end_src
 
 *** Avy
-
-Avy is the best way to jump to any text on screen.
+Avy is a useful tool for jumping and acting on arbitrary text on screen.
 
 #+begin_src emacs-lisp
 (map! "C-." 'avy-goto-char-timer)
@@ -112,9 +105,35 @@ Avy can also be combined with Embark. This allows for selecting and acting on an
   t)
 
 (after! avy
- (setf (alist-get ?o avy-dispatch-alist) 'avy-action-embark))
+  (setf (alist-get ?o avy-dispatch-alist) 'avy-action-embark))
 #+end_src
 
+*** ISearch
+ISearch is one of Emacs's most powerful features. When I first started using Emacs, I foolishly dismissed it. I didn't realize for years that many of my text movements can be replaced by incremental searching.
+
+#+begin_src emacs-lisp
+(defun my-isearch-consult-line ()
+  "Invoke `consult-line' from isearch."
+  (interactive)
+  (let ((query (if isearch-regexp
+                   isearch-string
+                 (regexp-quote isearch-string))))
+    (isearch-update-ring isearch-string isearch-regexp)
+    (let (search-nonincremental-instead)
+      (ignore-errors (isearch-done t t)))
+    (consult-line query)))
+
+(after! isearch
+  (setq search-nonincremental-instead nil) ; disable nonincremental search when input is empty on RET
+  (map! :map isearch-mode-map
+        "C-h" #'isearch-describe-bindings
+        "C-d" #'isearch-forward-symbol-at-point ; often quicker than M-s .
+        "C-l" #'my-isearch-consult-line
+        "C-." #'avy-isearch
+        "M-@" #'anzu-isearch-query-replace ; M-% is too much of a stretch
+        [remap isearch-query-replace]         #'anzu-isearch-query-replace
+        [remap isearch-query-replace-regexp]  #'anzu-isearch-query-replace-regexp))
+#+end_src
 *** S-Expressions
 
 Bind some useful smartparens commands not bound by default.
@@ -130,10 +149,10 @@ Bind some useful smartparens commands not bound by default.
 
 *** Paragraph Filling
 
-When I decided to switch to wrapping for Org mode, I tried to unfill all my paragraphs but realized this feature is not provided natively. Here is an implementation based on one from the [[https:www.emacswiki.org/emacs/UnfillParagraph][Emacs Wiki]]: mine includes a wrapper function which allows for deciding on filling or unfilling via the prefix argument.
+When I decided to switch to wrapping for Org mode, I tried to empty all my paragraphs but realized this feature is not provided by default. Here is an implementation based on one from the [[https:www.emacswiki.org/emacs/UnfillParagraph][Emacs Wiki]]. Mine includes a wrapper function which allows deciding on filling or emptying via the prefix argument.
 
 #+begin_src emacs-lisp
-(defun unfill-paragraph (&optional region)
+(defun empty-paragraph (&optional region)
   "Takes a multi-line paragraph and makes it into a single line of text."
   (interactive (progn (barf-if-buffer-read-only) '(t)))
   (let ((fill-column (point-max))
@@ -141,13 +160,13 @@ When I decided to switch to wrapping for Org mode, I tried to unfill all my para
         (emacs-lisp-docstring-fill-column t))
     (fill-paragraph nil region)))
 
-(defun my-fill-paragraph (&optional region unfill)
+(defun my-fill-paragraph (&optional region empty)
   (interactive (progn (barf-if-buffer-read-only)
                       (list t current-prefix-arg)))
-  (let ((unfill (or unfill 1)))
-    (if (or (eq unfill '-)
-            (cl-minusp unfill))
-        (unfill-paragraph region)
+  (let ((empty (or empty 1)))
+    (if (or (eq empty '-)
+            (cl-minusp empty))
+        (empty-paragraph region)
       (fill-paragraph t region))))
 
 (map! "M-q" 'my-fill-paragraph)
@@ -161,12 +180,14 @@ By default doom loads a project into the main workspace if it’s empty. I prefe
 #+end_src
 
 ** Completion
-*** Corfu
-Company mode used to be the hip auto-complete framework. However, Corfu provides the same features while also integrating better with the native Emacs completion ecosystem.
+*** Orderless
+
+*** Completion at Point
+Emacs completion is designed around the minibuffer, which makes sense since most commands that require completion use the minibuffer for input. However, modern users are used to seeing candidates at the current point when completing text within a normal buffer. /Corfu/ provides this interface and more, while still adhering to the existing Emacs completion framework.
 
 #+begin_src emacs-lisp
 (after! corfu
-  (setq corfu-auto t
+  (setq corfu-auto nil
         corfu-cycle t
         corfu-on-exact-match 'insert))
 #+end_src
@@ -174,23 +195,8 @@ Company mode used to be the hip auto-complete framework. However, Corfu provides
 I used to really like constantly having completion options available, but completion backend speeds and results are not always reliable enough to enable this by default. Now, I use tab completion by default, which stays out of my way unless I need it.
 
 #+begin_src emacs-lisp
-(setq tab-always-indent 'complete) ; indent or complete line
+(setq-default tab-always-indent 'complete) ; indent line or complete
 #+end_src
-
-*** Company
-At the moment, I am testing out Corfu. These are my old Company settings.
-
-#+begin_src emacs-lisp
-(after! company
-  (setq company-idle-delay 0.21
-        company-show-quick-access t
-        company-tooltip-limit 20
-        company-tooltip-align-annotations t)
-  (map! :map company-active-map
-        "C-n" nil
-        "C-p" nil))
-#+end_src
-
 ** Spell Checking
 This is a temporary fix for the way the spell module handles the personal dictionary. See [[https:github.com/doomemacs/doomemacs/issues/6246][this issue]] for details.
 
@@ -205,16 +211,7 @@ This is a temporary fix for the way the spell module handles the personal dictio
 ** Org Mode
 #+begin_src emacs-lisp
 (setq org-directory "~/Documents/Org/"
-      org-startup-indented t
-      org-auto-align-tags nil
-      org-tags-column 0
-      org-catch-invisible-edits 'show-and-error
-      org-special-ctrl-a/e t
-      org-insert-heading-respect-content t
-      org-hide-emphasis-markers t
-      org-pretty-entities t
-      org-agenda-tags-column 0
-      org-ellipsis "…")
+      org-startup-indented t)
 #+end_src
 
 Modern monitors are wide enough that longer lines are acceptable. I also rarely have more than two horizontal windows open at a time.
@@ -223,9 +220,9 @@ Modern monitors are wide enough that longer lines are acceptable. I also rarely 
 (setq-hook! org-mode fill-column 120)
 #+end_src
 
-I prefer the headings to appear larger than the rest of the text on screen to make them more readable. I wrote [[fn:my-set-org-header-style][my-set-org-header-style]] to make changing the styles of all the header faces quicker and less error prone. Currently, this source block is disabled since I'm using Org Modern.
+I prefer the headings to appear larger than the rest of the text on screen to make them more readable. I wrote [[fn:my-set-org-header-style][my-set-org-header-style]] to make changing the styles of all the header faces quicker and less error prone.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 (cl-defmacro my-set-org-header-style ((top-level-height height-diff) &rest args)
   "Set the height of Org head lines with evenly spaced height differences."
   (declare (indent defun))
@@ -235,6 +232,7 @@ I prefer the headings to appear larger than the rest of the text on screen to ma
                 while (>= height 1)
                 collect (let ((level-name (intern (format "org-level-%d" level))))
                           `(set-face-attribute ',level-name nil
+                            :height ,height
                             ,@args)))))
 
 (after! org
@@ -244,12 +242,23 @@ I prefer the headings to appear larger than the rest of the text on screen to ma
 
 I use the Org Modern package to beautify the Org syntax.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (use-package! org-modern
   :hook ((org-mode . org-modern-mode)))
 
 (use-package! org-modern-indent
   :hook ((org-mode . org-modern-indent-mode)))
+#+end_src
+
+The default Org capf list could use some work. I prefer snippets, dabbrevs, and dictionary results to be shown together during a completion prompt.
+
+#+begin_src emacs-lisp
+(when (modulep! :personal auto-complete)
+  (setq-hook! org-mode
+    completion-at-point-functions
+    (list #'cape-elisp-block
+          (cape-capf-super #'cape-dabbrev
+                           #'cape-dict))))
 #+end_src
 
 ** Programming
@@ -259,22 +268,21 @@ I use these modes in every programming language.
 (add-hook! prog-mode '(rainbow-delimiters-mode display-fill-column-indicator-mode))
 #+end_src
 
-Configure the tab key to always indent line to the correct indention.
-
-#+begin_src emacs-lisp
-(setq-hook! prog-mode tab-always-indent t)
-#+end_src
-
 *** Language Servers
-
 Enables some useful UI features that are Doom disables by default.
 
 #+begin_src emacs-lisp
 (setq lsp-headerline-breadcrumb-enable t)
 #+end_src
+*** Common Lisp
+Often in projects using the iter macro from the Iterate package, Sly runs into indention collisions, so override it here.
+
+#+begin_src emacs-lisp
+(after! sly
+  (put 'iter 'common-lisp-indent-function 0))
+#+end_src
 
 *** C/C++
-
 Set the default style to the Linux kernel's style, but use a 4 space indent.
 
 #+begin_src emacs-lisp
@@ -296,20 +304,4 @@ I prefer the new treesitter based mode, but the old cc-mode has some useful comm
 (use-package! cc-mode
   :bind (("C-x DEL" . c-hungry-delete-backwards)
          ("C-x C-d" . c-hungry-delete-forward)))
-#+end_src
-
-*** Common Lisp
-
-Sly can become slow for some reason during completion, so disable idle completion.
-
-#+begin_src emacs-lisp
-(setq-hook! lisp-mode
-  company-idle-delay nil)
-#+end_src
-
-Often in projects using the iter macro from the Iterate package, Sly runs into indention collisions, so override it here.
-
-#+begin_src emacs-lisp
-(after! sly
-  (put 'iter 'common-lisp-indent-function 0))
 #+end_src
