@@ -55,6 +55,3 @@
 
 (package! rainbow-delimiters)
 (package! rainbow-mode)
-(package! org-modern)
-(package! org-modern-indent
-  :recipe '(:type git :host github :repo "jdtsmith/org-modern-indent"))

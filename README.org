@@ -240,16 +240,6 @@ I prefer the headings to appear larger than the rest of the text on screen to ma
     :weight 'bold))
 #+end_src
 
-I use the Org Modern package to beautify the Org syntax.
-
-#+begin_src emacs-lisp :tangle no
-(use-package! org-modern
-  :hook ((org-mode . org-modern-mode)))
-
-(use-package! org-modern-indent
-  :hook ((org-mode . org-modern-indent-mode)))
-#+end_src
-
 The default Org capf list could use some work. I prefer snippets, dabbrevs, and dictionary results to be shown together during a completion prompt.
 
 #+begin_src emacs-lisp
