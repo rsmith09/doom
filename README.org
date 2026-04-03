@@ -68,10 +68,30 @@ Doom hijacks [[fn:whitespace-mode][whitespace-mode]] by default to highlight pos
 #+end_src
 
 ** Editing
-Automatically inserting newlines when moving to the next line is useful when auto-complete is active.
+*** Default Command Tweaks
+**** Newline Insertion
+Automatically inserting newlines when moving to the next line is useful for staying in the zone.
 
 #+begin_src emacs-lisp
 (setq next-line-add-newlines t)
+#+end_src
+
+**** Line Opening
+The default [[fn:open-line][open-line]] behavior is pretty blunt. Usually you don't want to insert the newline at the current point; you almost always want to move to the end of the line first. [[fn:my-smart-open-line][my-smart-open-line]] implements this behavior and also allows for opening above the current line via a negative prefix argument.
+
+#+begin_src emacs-lisp
+(defun my-smart-open-line (n)
+  (interactive "p")
+  (unless (zerop n)
+    (push (point) buffer-undo-list)
+    (let ((count (abs n)))
+      (end-of-line (when (cl-minusp n) 0))
+      (dotimes (_ count) (newline-and-indent))
+      (when (cl-minusp n)
+        (forward-line (- 1 count))
+        (indent-according-to-mode)))))
+;; Functions, such as `org-open-line', rely on `open-line' as a primitive.
+(advice-add #'open-line :override #'my-smart-open-line)
 #+end_src
 
 *** Avy
