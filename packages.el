@@ -55,3 +55,4 @@
 
 (package! rainbow-delimiters)
 (package! rainbow-mode)
+(package! org-appear)

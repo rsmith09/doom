@@ -241,6 +241,15 @@ I prefer the headings to appear larger than the rest of the text on screen to ma
     :weight 'bold))
 #+end_src
 
+By default it is not obvious where the cursor is sitting within stylized text. /org-appear/ reveals the hidden formatting characters so you can edit them without fumbling around deleting the wrong characters.
+
+#+begin_src emacs-lisp
+(use-package! org-appear
+  :hook ((org-mode . org-appear-mode))
+  :config
+  (setq org-hide-emphasis-markers t))
+#+end_src
+
 *** Completion
 The default Org capf list could use some work. I prefer snippets, dabbrevs, and dictionary results to be shown together during a completion prompt.
 
