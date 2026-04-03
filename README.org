@@ -80,7 +80,12 @@ Automatically inserting newlines when moving to the next line is useful for stay
 The default [[fn:open-line][open-line]] behavior is pretty blunt. Usually you don't want to insert the newline at the current point; you almost always want to move to the end of the line first. [[fn:my-smart-open-line][my-smart-open-line]] implements this behavior and also allows for opening above the current line via a negative prefix argument.
 
 #+begin_src emacs-lisp
-(defun my-smart-open-line (n)
+(cl-defun my-smart-open-line (&optional (n 1))
+  "Creates N lines above or below the current line.
+
+If N is positive, the newlines are inserted at the end of the current line, and the point is moved to the last line. If N is negative, the newlines are inserted at the beginning of the current line, and the point is placed at the beginning of the first line. This function does nothing if N is 0.
+
+All lines inserted by this function are indented according to the current major mode."
   (interactive "p")
   (unless (zerop n)
     (push (point) buffer-undo-list)
