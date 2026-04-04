@@ -105,6 +105,7 @@ All lines inserted by this function are indented according to the current major 
 (use-package! crux
   :bind (("C-c d" . crux-duplicate-current-line-or-region)))
 #+end_src
+
 *** Avy
 Avy is a useful tool for jumping and acting on arbitrary text on screen.
 
@@ -211,8 +212,6 @@ By default doom loads a project into the main workspace if it’s empty. I prefe
 #+end_src
 
 ** Completion
-*** Orderless
-
 *** Completion at Point
 Emacs completion is designed around the minibuffer, which makes sense since most commands that require completion use the minibuffer for input. However, modern users are used to seeing candidates at the current point when completing text within a normal buffer. /Corfu/ provides this interface and more, while still adhering to the existing Emacs completion framework.
 
