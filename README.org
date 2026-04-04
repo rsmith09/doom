@@ -98,6 +98,13 @@ All lines inserted by this function are indented according to the current major 
 (advice-add #'open-line :override #'my-smart-open-line)
 #+end_src
 
+*** Crux
+/Crux/ provides a lot of useful editing commands. I only use a few of them, but it's better than implementing them myself.
+
+#+begin_src emacs-lisp
+(use-package! crux
+  :bind (("C-c d" . crux-duplicate-current-line-or-region)))
+#+end_src
 *** Avy
 Avy is a useful tool for jumping and acting on arbitrary text on screen.
 

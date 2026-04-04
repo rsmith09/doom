@@ -53,6 +53,7 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;; (unpin! t)
 
+(package! crux)
+(package! org-appear)
 (package! rainbow-delimiters)
 (package! rainbow-mode)
-(package! org-appear)
