@@ -275,15 +275,14 @@ By default it is not obvious where the cursor is sitting within stylized text. /
 #+end_src
 
 *** Completion
-The default Org capf list could use some work. I prefer snippets, dabbrevs, and dictionary results to be shown together during a completion prompt.
-
 #+begin_src emacs-lisp
 (when (modulep! :personal auto-complete)
   (setq-hook! org-mode
     completion-at-point-functions
-    (list #'cape-elisp-block
-          (cape-capf-super #'cape-dabbrev
-                           #'cape-dict))))
+    (list #'cape-file
+          #'cape-elisp-block
+          #'cape-dabbrev
+          #'cape-dict)))
 #+end_src
 
 Emphasis in Org mode is marked by pair syntax (e.g. surrounding a word a / character italicizes it). Register these characters with /smartparens/ so they can be handled automatically.
