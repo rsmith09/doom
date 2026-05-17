@@ -80,7 +80,7 @@ The default [[fn:open-line][open-line]] behavior is pretty blunt. Usually you do
 
 #+begin_src emacs-lisp
 (cl-defun my-smart-open-line (&optional (n 1))
-  "Creates N lines above or below the current line.
+  "Creates N lines below or above the current line.
 
 If N is positive, the newlines are inserted at the end of the current line, and the point is moved to the last line. If N is negative, the newlines are inserted at the beginning of the current line, and the point is placed at the beginning of the first line. This function does nothing if N is 0.
 
@@ -96,6 +96,20 @@ All lines inserted by this function are indented according to the current major 
         (indent-according-to-mode)))))
 ;; Functions, such as `org-open-line', rely on `open-line' as a primitive.
 (advice-add #'open-line :override #'my-smart-open-line)
+#+end_src
+
+I use the inverse behavior of [[fn:my-smart-open-line][my-smart-open-line]] so often, I decided to bind it to a dedicated keybind to avoid reaching for the prefix key.
+
+#+begin_src emacs-lisp
+(cl-defun my-smart-open-line-above (&optional (n 1))
+  "Create N lines above or below the current line.
+
+Behaves identically to `my-smart-open-line' except the default behavior
+is to open lines above the current line."
+  (interactive "p")
+  (my-smart-open-line (- n)))
+
+(map! "M-o" #'my-smart-open-line-above)
 #+end_src
 
 *** Crux
